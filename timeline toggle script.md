@@ -11,6 +11,13 @@ Main Section
 │       ├── Container (.content-panel-2)
 │       └── Container (.content-panel-3)
 
+Custom CSS Classes Needed:
+
+.timeline-wrapper - main container
+.step-button-1, .step-button-2, etc. - buttons
+.progress-line-1, .progress-line-2, etc. - animated lines
+.content-panel-1, .content-panel-2, etc. - content areas
+
 
 So your layout would be:
 Button 1  →  [Content Panel 1: "Step 1 explanation text/image"]
