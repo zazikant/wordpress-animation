@@ -24,6 +24,10 @@ The main problems encountered when implementing a simple toggle script in Elemen
 - Script executed before elements were available
 - **Result**: Elements not found during script execution
 
+### 5. **CSS Styling Preservation**
+- Using `display: none/block` resets element styling and text alignment
+- **Solution**: Use `visibility: hidden/visible` instead to preserve all CSS properties including text centering
+
 ## What's Different With Elementor?
 
 ### Traditional HTML Button:
@@ -116,6 +120,17 @@ function initToggle() {
 }
 ```
 
+### 6. **Visibility vs Display for Element Toggling**
+**IMPORTANT**: When writing GTM scripts for element toggling, always use `visibility: hidden/visible` instead of `display: none/block` to preserve CSS styling and text alignment.
+
+```javascript
+// WRONG - Resets styling
+container.style.display = 'none';  // Loses text centering
+
+// CORRECT - Preserves styling  
+container.style.visibility = 'hidden';  // Keeps text centering
+```
+
 ## Best Practices For Elementor + GTM
 
 ### 1. **Always Add Debug Logging**
@@ -158,5 +173,6 @@ var innerLinks = buttonWrapper.querySelectorAll('a, button');
 5. **Add retry logic** for timing issues
 6. **Debug extensively** with console.log
 7. **Use ES5 syntax** for GTM compatibility
+8. **Use `visibility` instead of `display`** for element toggling
 
 This approach turns a simple 3-line toggle script into a robust 50-line solution that handles Elementor's complexity gracefully.
