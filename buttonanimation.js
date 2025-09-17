@@ -1,13 +1,10 @@
 <script>
 // Fixed toggle script with correct selectors
 console.log('Toggle script started');
-
 var container = document.querySelector('.toggle-content-class');
 var button = document.querySelector('.toggle-btn-class');
-
 console.log('Container found:', container);
 console.log('Button found:', button);
-
 if (container && button && typeof gsap !== 'undefined') {
     var isVisible = false;
     
@@ -26,13 +23,13 @@ if (container && button && typeof gsap !== 'undefined') {
                 opacity: 0, 
                 duration: 0.3,
                 onComplete: function() {
-                    container.style.display = 'none';
+                    container.style.visibility = 'hidden';
                 }
             });
             isVisible = false;
         } else {
             console.log('Showing container');
-            container.style.display = 'block';
+            container.style.visibility = 'visible';
             gsap.to(container, {opacity: 1, duration: 0.3});
             isVisible = true;
         }
