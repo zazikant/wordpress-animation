@@ -1,4 +1,8 @@
-Watch this md in edit mode to see architecture. Also, in elementor, the divider line widget need not have tranform to 90 degree to mak eit vertical. keep its width less and height more. then this animation will work.
+
+
+======= WITHOUT hero-animation-container GSAP SCROLL TRIGGER DEPENDENT =========
+
+Watch this md in edit mode to see architecture .. Also, in elementor, the divider line widget need not have tranform to 90 degree to mak eit vertical. keep its width less and height more. then this animation will work.
 
 
 Main Section
