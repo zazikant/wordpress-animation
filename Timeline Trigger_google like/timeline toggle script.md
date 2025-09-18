@@ -1,4 +1,8 @@
+Their are 2 variants of animation.
 
+======= WITH hero-animation-container GSAP SCROLL TRIGGER DEPENDENT =========
+
+ The gsap scroll trigger dependent script - does the re load of all animations from 1 to 3 buttons when parent container .hero-animation-container gets visible.
 
 ======= WITHOUT hero-animation-container GSAP SCROLL TRIGGER DEPENDENT =========
 
