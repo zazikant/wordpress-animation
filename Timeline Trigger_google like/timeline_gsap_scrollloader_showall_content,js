@@ -1,0 +1,315 @@
+<script>
+// Timeline Toggle Script for 9 buttons with height animation - CUMULATIVE VERSION
+function initTimeline() {
+    var heroContainer = document.querySelector('.hero-animation-container');
+    
+    // Get all buttons and content panels (1-9)
+    var buttons = [];
+    var contents = [];
+    var lines = [];
+    var lineSeparators = [];
+    
+    for (var i = 1; i <= 9; i++) {
+        buttons[i-1] = document.querySelector('.step-button-' + i);
+        contents[i-1] = document.querySelector('.content-panel-' + i);
+        if (i < 9) { // Only 8 lines between 9 buttons
+            lines[i-1] = document.querySelector('.progress-line-' + i);
+        }
+    }
+    
+    // Check if all required elements exist
+    var allElementsExist = heroContainer && buttons.every(function(btn) { return btn; }) && contents.every(function(content) { return content; });
+    
+    if (!allElementsExist || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+        setTimeout(initTimeline, 500);
+        return;
+    }
+    
+    gsap.registerPlugin(ScrollTrigger);
+    
+    var activeStep = 0;
+    var autoTimers = [];
+    var timelineStarted = false;
+    var revealedSteps = []; // Track which steps have been revealed
+    
+    // Get line separators
+    for (var i = 0; i < 8; i++) {
+        if (lines[i]) {
+            lineSeparators[i] = lines[i].querySelector('.elementor-divider-separator');
+        }
+    }
+    
+    // INITIAL SETUP - Set everything to starting state
+    function setInitialState() {
+        // Hide hero container
+        gsap.set(heroContainer, {
+            opacity: 0,
+            y: 50
+        });
+        
+        // Hide all content panels
+        gsap.set(contents, {
+            height: 0,
+            overflow: 'hidden',
+            opacity: 0
+        });
+        
+        // Show only button 1, hide buttons 2-9
+        gsap.set(buttons[0], {
+            opacity: 1,
+            pointerEvents: 'auto'
+        });
+        
+        for (var i = 1; i < 9; i++) {
+            gsap.set(buttons[i], {
+                opacity: 0,
+                pointerEvents: 'none'
+            });
+        }
+        
+        // Reset all progress lines
+        for (var i = 0; i < 8; i++) {
+            if (lineSeparators[i]) {
+                gsap.set(lineSeparators[i], { scaleY: 0, transformOrigin: 'top' });
+            }
+        }
+        
+        // Reset state variables
+        activeStep = 0;
+        timelineStarted = false;
+        revealedSteps = []; // Clear revealed steps tracking
+    }
+    
+    // Call initial setup
+    setInitialState();
+    
+    // Timer management functions
+    function clearAllTimers() {
+        autoTimers.forEach(function(timer) {
+            clearTimeout(timer);
+        });
+        autoTimers = [];
+    }
+    
+    function setManagedTimeout(callback, delay) {
+        var timer = setTimeout(function() {
+            var index = autoTimers.indexOf(timer);
+            if (index > -1) {
+                autoTimers.splice(index, 1);
+            }
+            callback();
+        }, delay);
+        autoTimers.push(timer);
+        return timer;
+    }
+    
+    // Function to reset the entire timeline
+    function resetTimeline() {
+        clearAllTimers();
+        setInitialState();
+    }
+    
+    function toggleContent(contentElement, isVisible, callback) {
+        if (isVisible) {
+            gsap.to(contentElement, {
+                height: 'auto',
+                opacity: 1,
+                duration: 0.25,
+                ease: 'power2.out',
+                onComplete: callback
+            });
+        } else {
+            gsap.to(contentElement, {
+                height: 0,
+                opacity: 0,
+                duration: 0.3,
+                ease: 'power2.in',
+                onComplete: callback
+            });
+        }
+    }
+    
+    function animateProgressLine(lineElement, callback) {
+        if (lineElement) {
+            var separator = lineElement.querySelector('.elementor-divider-separator');
+            if (separator) {
+                gsap.to(separator, {
+                    scaleY: 1,
+                    duration: 1,
+                    ease: 'power2.inOut',
+                    onComplete: callback
+                });
+            } else {
+                if (callback) setTimeout(callback, 1000);
+            }
+        } else if (callback) {
+            setTimeout(callback, 1000);
+        }
+    }
+    
+    function activateStep(stepNumber) {
+        var currentContent = contents[stepNumber - 1];
+        
+        // CUMULATIVE CHANGE: Only show current content, don't hide others
+        // Keep all previously revealed content visible
+        if (revealedSteps.indexOf(stepNumber) === -1) {
+            revealedSteps.push(stepNumber);
+            
+            // Show current content (others remain as they were)
+            toggleContent(currentContent, true, function() {
+                // If not the last step, animate the corresponding line
+                if (stepNumber < 9) {
+                    var lineIndex = stepNumber - 1; // Line 1 is at index 0
+                    if (lines[lineIndex]) {
+                        animateProgressLine(lines[lineIndex], function() {
+                            // Show next button after line completes
+                            var nextButton = buttons[stepNumber]; // Next button (stepNumber is 0-indexed for buttons array)
+                            if (nextButton) {
+                                gsap.to(nextButton, {
+                                    opacity: 1,
+                                    pointerEvents: 'auto',
+                                    duration: 0.3,
+                                    ease: 'power2.out'
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        }
+        
+        activeStep = stepNumber;
+    }
+    
+    function activateStepWithAuto(stepNumber) {
+        activateStep(stepNumber);
+        
+        // Auto-progress to next step if not the last one
+        if (stepNumber < 9) {
+            setManagedTimeout(function() {
+                activateStepWithAuto(stepNumber + 1);
+            }, 2000); // 1s line animation + 1s delay
+        }
+        // Step 9 - no further auto-progression
+    }
+    
+    function setupButtonClickWithAuto(button, stepNumber) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearAllTimers();
+            
+            // CUMULATIVE CHANGE: When clicking a step, reveal all steps up to that point
+            for (var i = 1; i <= stepNumber; i++) {
+                if (revealedSteps.indexOf(i) === -1) {
+                    revealedSteps.push(i);
+                    toggleContent(contents[i - 1], true);
+                    
+                    // Also show all buttons up to this step
+                    if (buttons[i - 1]) {
+                        gsap.set(buttons[i - 1], {
+                            opacity: 1,
+                            pointerEvents: 'auto'
+                        });
+                    }
+                    
+                    // Show progress lines up to current step
+                    if (i < stepNumber && lines[i - 1] && lineSeparators[i - 1]) {
+                        gsap.set(lineSeparators[i - 1], { scaleY: 1 });
+                    }
+                }
+            }
+            
+            // Continue auto-progression from clicked step
+            activateStepWithAuto(stepNumber);
+            return false;
+        });
+        
+        var clickableElements = button.querySelectorAll('a, button, [role="button"]');
+        for (var i = 0; i < clickableElements.length; i++) {
+            clickableElements[i].addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                button.click();
+                return false;
+            });
+        }
+    }
+    
+    // Setup click handlers for all 9 buttons
+    for (var i = 0; i < 9; i++) {
+        setupButtonClickWithAuto(buttons[i], i + 1);
+    }
+    
+    // ScrollTrigger for hero container
+    ScrollTrigger.create({
+        trigger: heroContainer,
+        start: "top 85%",
+        end: "bottom 15%",
+        onEnter: function() {
+            // Make sure we start from clean state
+            resetTimeline();
+            
+            // Animate container in
+            gsap.to(heroContainer, {
+                opacity: 1,
+                y: 0,
+                duration: 1.5,
+                ease: "power2.out",
+                onComplete: function() {
+                    if (!timelineStarted) {
+                        timelineStarted = true;
+                        setTimeout(function() {
+                            activateStepWithAuto(1);
+                        }, 1000);
+                    }
+                }
+            });
+        },
+        onLeave: function() {
+            resetTimeline();
+            gsap.to(heroContainer, {
+                opacity: 0,
+                y: 50,
+                duration: 0.5,
+                ease: "power2.in"
+            });
+        },
+        onLeaveBack: function() {
+            resetTimeline();
+            gsap.to(heroContainer, {
+                opacity: 0,
+                y: 50,
+                duration: 0.5,
+                ease: "power2.in"
+            });
+        },
+        onEnterBack: function() {
+            // Make sure we start from clean state
+            resetTimeline();
+            
+            // Animate container in
+            gsap.to(heroContainer, {
+                opacity: 1,
+                y: 0,
+                duration: 1.5,
+                ease: "power2.out",
+                onComplete: function() {
+                    if (!timelineStarted) {
+                        timelineStarted = true;
+                        setTimeout(function() {
+                            activateStepWithAuto(1);
+                        }, 1000);
+                    }
+                }
+            });
+        }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTimeline);
+} else {
+    initTimeline();
+}
+</script>
