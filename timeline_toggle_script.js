@@ -26,6 +26,12 @@ function initTimeline() {
         opacity: 0
     });
     
+    // Initially hide buttons 2 and 3
+    gsap.set([button2, button3], {
+        opacity: 0,
+        pointerEvents: 'none'
+    });
+    
     var line1Separator = line1 ? line1.querySelector('.elementor-divider-separator') : null;
     var line2Separator = line2 ? line2.querySelector('.elementor-divider-separator') : null;
     
@@ -101,9 +107,25 @@ function initTimeline() {
         
         toggleContent(currentContent, true, function() {
             if (stepNumber === 1 && line1) {
-                animateProgressLine(line1);
+                animateProgressLine(line1, function() {
+                    // Show button 2 after line 1 completes
+                    gsap.to(button2, {
+                        opacity: 1,
+                        pointerEvents: 'auto',
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
             } else if (stepNumber === 2 && line2) {
-                animateProgressLine(line2);
+                animateProgressLine(line2, function() {
+                    // Show button 3 after line 2 completes
+                    gsap.to(button3, {
+                        opacity: 1,
+                        pointerEvents: 'auto',
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
             }
         });
         
