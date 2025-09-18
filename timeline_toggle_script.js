@@ -1,10 +1,6 @@
 <script>
 // Timeline Toggle Script for 3 buttons with height animation
-console.log('Timeline toggle script started');
-
-// Function to initialize timeline
 function initTimeline() {
-    // Get all buttons and content containers
     var button1 = document.querySelector('.step-button-1');
     var button2 = document.querySelector('.step-button-2');
     var button3 = document.querySelector('.step-button-3');
@@ -16,44 +12,47 @@ function initTimeline() {
     var line1 = document.querySelector('.progress-line-1');
     var line2 = document.querySelector('.progress-line-2');
     
-    // Debug logging
-    console.log('Button 1 found:', button1);
-    console.log('Button 2 found:', button2);
-    console.log('Button 3 found:', button3);
-    console.log('Content 1 found:', content1);
-    console.log('Content 2 found:', content2);
-    console.log('Content 3 found:', content3);
-    console.log('Line 1 found:', line1);
-    console.log('Line 2 found:', line2);
-    console.log('GSAP exists:', typeof gsap !== 'undefined');
-    
-    // Check if all elements exist and GSAP is available
     if (!button1 || !button2 || !button3 || !content1 || !content2 || !content3 || typeof gsap === 'undefined') {
-        console.log('Some elements missing or GSAP not loaded, retrying in 500ms...');
         setTimeout(initTimeline, 500);
         return;
     }
     
-    console.log('All elements found, setting up timeline...');
-    
-    // State tracking
     var activeStep = 0;
+    var autoTimers = [];
     
-    // Initialize all content panels as collapsed
     gsap.set([content1, content2, content3], {
         height: 0,
         overflow: 'hidden',
         opacity: 0
     });
     
-    // Initialize progress lines
-    if (line1) gsap.set(line1, { scaleY: 0, transformOrigin: 'top' });
-    if (line2) gsap.set(line2, { scaleY: 0, transformOrigin: 'top' });
+    var line1Separator = line1 ? line1.querySelector('.elementor-divider-separator') : null;
+    var line2Separator = line2 ? line2.querySelector('.elementor-divider-separator') : null;
     
-    // Function to handle content toggle
+    if (line1Separator) gsap.set(line1Separator, { scaleY: 0, transformOrigin: 'top' });
+    if (line2Separator) gsap.set(line2Separator, { scaleY: 0, transformOrigin: 'top' });
+    
+    function clearAllTimers() {
+        autoTimers.forEach(function(timer) {
+            clearTimeout(timer);
+        });
+        autoTimers = [];
+    }
+    
+    function setManagedTimeout(callback, delay) {
+        var timer = setTimeout(function() {
+            var index = autoTimers.indexOf(timer);
+            if (index > -1) {
+                autoTimers.splice(index, 1);
+            }
+            callback();
+        }, delay);
+        autoTimers.push(timer);
+        return timer;
+    }
+    
     function toggleContent(contentElement, isVisible, callback) {
         if (isVisible) {
-            // Show content with height animation
             gsap.to(contentElement, {
                 height: 'auto',
                 opacity: 1,
@@ -62,7 +61,6 @@ function initTimeline() {
                 onComplete: callback
             });
         } else {
-            // Hide content
             gsap.to(contentElement, {
                 height: 0,
                 opacity: 0,
@@ -73,97 +71,88 @@ function initTimeline() {
         }
     }
     
-    // Function to animate progress line
     function animateProgressLine(lineElement, callback) {
         if (lineElement) {
-            gsap.to(lineElement, {
-                scaleY: 1,
-                duration: 3,
-                ease: 'power1.inOut',
-                onComplete: callback
-            });
-        } else if (callback) {
-            // If no line element, still trigger callback after delay
-            setTimeout(callback, 3000);
-        }
-    }
-    
-    // Function to handle button clicks with nested elements
-    function setupButtonClick(button, stepNumber) {
-        // Main button click
-        button.addEventListener('click', function(e) {
-            console.log('Button ' + stepNumber + ' clicked!');
-            e.preventDefault();
-            e.stopPropagation();
-            
-            if (activeStep !== stepNumber) {
-                activateStep(stepNumber);
+            var separator = lineElement.querySelector('.elementor-divider-separator');
+            if (separator) {
+                gsap.to(separator, {
+                    scaleY: 1,
+                    duration: 2,
+                    ease: 'power2.inOut',
+                    onComplete: callback
+                });
+            } else {
+                if (callback) setTimeout(callback, 2000);
             }
-            
-            return false;
-        });
-        
-        // Handle nested clickable elements
-        var clickableElements = button.querySelectorAll('a, button, [role="button"]');
-        console.log('Button ' + stepNumber + ' clickable elements:', clickableElements.length);
-        
-        for (var i = 0; i < clickableElements.length; i++) {
-            clickableElements[i].addEventListener('click', function(e) {
-                console.log('Nested element in button ' + stepNumber + ' clicked');
-                e.preventDefault();
-                e.stopPropagation();
-                button.click(); // Trigger main button click
-                return false;
-            });
+        } else if (callback) {
+            setTimeout(callback, 2000);
         }
     }
     
-    // Function to activate a specific step
     function activateStep(stepNumber) {
-        console.log('Activating step:', stepNumber);
-        
-        // Close all other content panels first
         var allContent = [content1, content2, content3];
         var currentContent = allContent[stepNumber - 1];
         
-        // Hide other content panels
         allContent.forEach(function(content, index) {
             if (content !== currentContent) {
                 toggleContent(content, false);
             }
         });
         
-        // Show current content
         toggleContent(currentContent, true, function() {
-            console.log('Content ' + stepNumber + ' revealed');
-            
-            // Start next line animation if not the last step
             if (stepNumber === 1 && line1) {
-                animateProgressLine(line1, function() {
-                    console.log('Line 1 animation completed');
-                });
+                animateProgressLine(line1);
             } else if (stepNumber === 2 && line2) {
-                animateProgressLine(line2, function() {
-                    console.log('Line 2 animation completed');
-                });
+                animateProgressLine(line2);
             }
         });
         
         activeStep = stepNumber;
     }
     
-    // Setup click handlers for all buttons
-    setupButtonClick(button1, 1);
-    setupButtonClick(button2, 2);
-    setupButtonClick(button3, 3);
+    function activateStepWithAuto(stepNumber) {
+        activateStep(stepNumber);
+        
+        if (stepNumber === 1) {
+            setManagedTimeout(function() {
+                activateStepWithAuto(2);
+            }, 4000);
+        } else if (stepNumber === 2) {
+            setManagedTimeout(function() {
+                activateStepWithAuto(3);
+            }, 4000);
+        }
+    }
     
-    console.log('Timeline setup completed successfully!');
+    function setupButtonClickWithAuto(button, stepNumber) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearAllTimers();
+            activateStepWithAuto(stepNumber);
+            return false;
+        });
+        
+        var clickableElements = button.querySelectorAll('a, button, [role="button"]');
+        for (var i = 0; i < clickableElements.length; i++) {
+            clickableElements[i].addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                button.click();
+                return false;
+            });
+        }
+    }
     
-    // Optional: Auto-start with first step
-    // activateStep(1);
+    setupButtonClickWithAuto(button1, 1);
+    setupButtonClickWithAuto(button2, 2);
+    setupButtonClickWithAuto(button3, 3);
+    
+    setTimeout(function() {
+        activateStepWithAuto(1);
+    }, 1000);
 }
 
-// Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initTimeline);
 } else {
